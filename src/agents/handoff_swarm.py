@@ -17,6 +17,7 @@ from core.config import Config
 from core.memory import MemoryManager
 from core.monitoring import MetricsCollector, AlertManager, DriftDetector
 from core.agent_tools import get_agent_tools
+from agents.evaluation_agent_with_handoff import EvaluationAgentWithHandoff
 
 
 class HandoffSwarm:
@@ -56,6 +57,12 @@ class HandoffSwarm:
             max_tokens=self.config.anthropic.max_tokens
         )
         
+        # Initialize evaluation agent
+        self.evaluation_agent = EvaluationAgentWithHandoff(
+            memory_manager=memory_manager,
+            metrics_collector=metrics_collector
+        )
+        
         # Initialize agents and swarm
         self.agents = {}
         self.swarm_workflow = None
@@ -85,6 +92,10 @@ class HandoffSwarm:
                         agent_name="nl2sql_agent_with_handoff",
                         description="Transfer user to the nl2sql agent that can help with database related queries, SQL operations, and data retrieval"
                     ),
+                    create_handoff_tool(
+                        agent_name="evaluation_agent_with_handoff",
+                        description="Transfer to evaluation agent to assess response quality using RAGAS and DEEPEVAL metrics"
+                    ),
                 ],
                 name="general_qa_agent_with_handoff",
                 prompt=self._get_general_qa_prompt()
@@ -102,6 +113,10 @@ class HandoffSwarm:
                     create_handoff_tool(
                         agent_name="invoice_information_agent_with_handoff",
                         description="Transfer user to the invoice information agent that can help with invoice information, billing, and payment data"
+                    ),
+                    create_handoff_tool(
+                        agent_name="evaluation_agent_with_handoff",
+                        description="Transfer to evaluation agent to assess response quality using RAGAS and DEEPEVAL metrics"
                     ),
                 ],
                 name="nl2sql_agent_with_handoff",
@@ -121,9 +136,35 @@ class HandoffSwarm:
                         agent_name="nl2sql_agent_with_handoff",
                         description="Transfer user to the nl2sql agent that can help with database related queries and data operations"
                     ),
+                    create_handoff_tool(
+                        agent_name="evaluation_agent_with_handoff",
+                        description="Transfer to evaluation agent to assess response quality using RAGAS and DEEPEVAL metrics"
+                    ),
                 ],
                 name="invoice_information_agent_with_handoff",
                 prompt=self._get_invoice_prompt()
+            )
+            
+            # Evaluation Agent
+            self.agents["evaluation_agent_with_handoff"] = create_react_agent(
+                model=self.llm,
+                tools=[
+                    *self.evaluation_agent.handoff_tools,  # Unpack evaluation tools
+                    create_handoff_tool(
+                        agent_name="general_qa_agent_with_handoff",
+                        description="Transfer user back to the general qa agent after evaluation"
+                    ),
+                    create_handoff_tool(
+                        agent_name="nl2sql_agent_with_handoff",
+                        description="Transfer user back to the nl2sql agent after evaluation"
+                    ),
+                    create_handoff_tool(
+                        agent_name="invoice_information_agent_with_handoff",
+                        description="Transfer user back to the invoice agent after evaluation"
+                    ),
+                ],
+                name="evaluation_agent_with_handoff",
+                prompt=self._get_evaluation_prompt()
             )
             
             self.logger.info(f"Initialized {len(self.agents)} agents with handoff tools: {list(self.agents.keys())}")
@@ -232,6 +273,34 @@ CORE RESPONSIBILITIES:
 - Maintain a professional and helpful tone
 
 Always use the appropriate tool to answer the user's question, and hand off to other specialists when their expertise is needed."""
+
+    def _get_evaluation_prompt(self) -> str:
+        """Get the prompt for the Evaluation agent."""
+        return """You are a specialized evaluation agent that assesses response quality using RAGAS and DEEPEVAL metrics.
+
+You have access to tools for:
+- evaluate_response_quality: Comprehensive quality evaluation
+- evaluate_rag_performance: RAG-specific metrics (faithfulness, relevancy, context precision)
+- evaluate_llm_safety: Safety metrics (hallucination, bias, toxicity)
+- get_quality_feedback: Generate human-readable feedback
+- suggest_response_improvements: Provide specific improvement suggestions
+
+IMPORTANT RULES:
+- Use evaluate_response_quality for comprehensive assessment
+- Use evaluate_rag_performance when context documents are available
+- Use evaluate_llm_safety for safety and bias assessment
+- Always provide constructive feedback and actionable suggestions
+- Hand off back to the original agent after evaluation
+
+CORE RESPONSIBILITIES:
+- Evaluate response quality using multiple metrics
+- Provide detailed feedback on response strengths and weaknesses
+- Suggest specific improvements for better responses
+- Assess RAG performance when context is available
+- Check for safety issues like hallucination, bias, and toxicity
+- Maintain objective and constructive evaluation approach
+
+Always provide thorough evaluation results and hand off back to the appropriate agent after assessment."""
 
     async def process_query(self, query: str, user_id: str = "default", session_id: str = None) -> Dict[str, Any]:
         """
