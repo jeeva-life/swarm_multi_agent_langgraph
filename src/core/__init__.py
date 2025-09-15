@@ -11,6 +11,7 @@ from core.invoice_system import get_invoice_system
 from core.agent_tools import get_agent_tools
 from core.memory import MemoryManager
 from core.monitoring import MetricsCollector, AlertManager, DriftDetector, Dashboard
+from core.evaluation_tools import RAGASEvaluationTools, DEEPEVALEvaluationTools, CustomEvaluationTools
 
 __all__ = [
     "Config",
@@ -24,5 +25,8 @@ __all__ = [
     "MetricsCollector",
     "AlertManager", 
     "DriftDetector",
-    "Dashboard"
+    "Dashboard",
+    "RAGASEvaluationTools",
+    "DEEPEVALEvaluationTools",
+    "CustomEvaluationTools"
 ]
