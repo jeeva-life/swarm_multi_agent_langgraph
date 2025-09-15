@@ -115,6 +115,17 @@ dash>=2.14.0
 dash-bootstrap-components>=1.5.0
 
 # =============================================================================
+# RAG Evaluation and Quality Assessment
+# =============================================================================
+# RAGAS for RAG evaluation metrics
+ragas>=0.1.0
+# DEEPEVAL for comprehensive LLM evaluation
+deepeval>=0.20.0
+# Additional evaluation dependencies
+openai>=1.0.0  # For some evaluation metrics
+anthropic>=0.7.0  # For Claude-based evaluations
+
+# =============================================================================
 # Installation Instructions
 # =============================================================================
 # For production installation with uv:
