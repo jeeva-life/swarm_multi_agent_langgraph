@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 from typing import Dict, Any, Optional
 
-from core.config import config
+from core.config.config import config
 from core.memory import MemoryManager
 from core.monitoring import MetricsCollector, AlertManager, DriftDetector, Dashboard
 from infrastructure import DatabaseClient, setup_logging, LangChainBedrockClient

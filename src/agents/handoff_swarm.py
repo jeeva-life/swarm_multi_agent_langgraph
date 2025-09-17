@@ -13,11 +13,12 @@ from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_anthropic import ChatAnthropic
 
-from core.config import Config
+from core.config.config import config as Config
 from core.memory import MemoryManager
 from core.monitoring import MetricsCollector, AlertManager, DriftDetector
 from core.agent_tools import get_agent_tools
 from agents.evaluation_agent_with_handoff import EvaluationAgentWithHandoff
+from agents.query_strategy_agent_with_tools import get_query_strategy_agent_with_tools
 
 
 class HandoffSwarm:
@@ -63,6 +64,9 @@ class HandoffSwarm:
             metrics_collector=metrics_collector
         )
         
+        # Initialize query strategy agent with tools
+        self.query_strategy_agent = get_query_strategy_agent_with_tools()
+        
         # Initialize agents and swarm
         self.agents = {}
         self.swarm_workflow = None
@@ -83,7 +87,10 @@ class HandoffSwarm:
             self.agents["general_qa_agent_with_handoff"] = create_react_agent(
                 model=self.llm,
                 tools=[
-                    *rag_tools,  # Unpack RAG tools
+                    create_handoff_tool(
+                        agent_name="query_strategy_agent_with_handoff",
+                        description="Transfer to query strategy agent for document-based queries, knowledge base questions, and intelligent RAG optimization"
+                    ),
                     create_handoff_tool(
                         agent_name="invoice_information_agent_with_handoff",
                         description="Transfer user to the invoice information agent that can help with invoice information, billing, payments, and customer data"
@@ -107,8 +114,8 @@ class HandoffSwarm:
                 tools=[
                     *nl2sql_tools,  # Unpack NL2SQL tools
                     create_handoff_tool(
-                        agent_name="general_qa_agent_with_handoff",
-                        description="Transfer user to the general qa agent that can help with general information queries about companies, documents, or knowledge base content"
+                        agent_name="query_strategy_agent_with_handoff",
+                        description="Transfer to query strategy agent for document-based queries and knowledge base questions"
                     ),
                     create_handoff_tool(
                         agent_name="invoice_information_agent_with_handoff",
@@ -129,8 +136,8 @@ class HandoffSwarm:
                 tools=[
                     *invoice_tools,  # Unpack invoice tools
                     create_handoff_tool(
-                        agent_name="general_qa_agent_with_handoff",
-                        description="Transfer user to the general qa agent that can help with general information queries about companies, documents, or knowledge base content"
+                        agent_name="query_strategy_agent_with_handoff",
+                        description="Transfer to query strategy agent for document-based queries and knowledge base questions"
                     ),
                     create_handoff_tool(
                         agent_name="nl2sql_agent_with_handoff",
@@ -151,8 +158,8 @@ class HandoffSwarm:
                 tools=[
                     *self.evaluation_agent.handoff_tools,  # Unpack evaluation tools
                     create_handoff_tool(
-                        agent_name="general_qa_agent_with_handoff",
-                        description="Transfer user back to the general qa agent after evaluation"
+                        agent_name="query_strategy_agent_with_handoff",
+                        description="Transfer to query strategy agent for document-based queries after evaluation"
                     ),
                     create_handoff_tool(
                         agent_name="nl2sql_agent_with_handoff",
@@ -165,6 +172,32 @@ class HandoffSwarm:
                 ],
                 name="evaluation_agent_with_handoff",
                 prompt=self._get_evaluation_prompt()
+            )
+            
+            # Query Strategy Agent with Tools
+            self.agents["query_strategy_agent_with_handoff"] = create_react_agent(
+                model=self.llm,
+                tools=[
+                    *self.query_strategy_agent.agent.tools,  # Unpack RAG optimization tools
+                    create_handoff_tool(
+                        agent_name="general_qa_agent_with_handoff",
+                        description="Transfer back to the general coordinator agent after query optimization"
+                    ),
+                    create_handoff_tool(
+                        agent_name="nl2sql_agent_with_handoff",
+                        description="Transfer user back to the nl2sql agent after query optimization"
+                    ),
+                    create_handoff_tool(
+                        agent_name="invoice_information_agent_with_handoff",
+                        description="Transfer user back to the invoice agent after query optimization"
+                    ),
+                    create_handoff_tool(
+                        agent_name="evaluation_agent_with_handoff",
+                        description="Transfer to evaluation agent to assess optimized query results"
+                    ),
+                ],
+                name="query_strategy_agent_with_handoff",
+                prompt=self._get_query_strategy_prompt()
             )
             
             self.logger.info(f"Initialized {len(self.agents)} agents with handoff tools: {list(self.agents.keys())}")
@@ -194,28 +227,29 @@ class HandoffSwarm:
     
     def _get_general_qa_prompt(self) -> str:
         """Get the prompt for the General QA agent."""
-        return """You are a specialized assistant for document-based queries and general knowledge questions.
+        return """You are the main coordinator agent for the multi-agent swarm system.
 
-You have access to tools for:
-- rag_general_qa_tool: Answer questions using retrieved documents
-- rag_search_documents_tool: Search for relevant documents
-- rag_load_documents_tool: Load documents into the knowledge base
+You coordinate between specialized agents:
+- query_strategy_agent_with_handoff: For document-based queries, knowledge base questions, and intelligent RAG optimization
+- invoice_information_agent_with_handoff: For invoice information, billing, payments, and customer data
+- nl2sql_agent_with_handoff: For database queries, SQL operations, and data retrieval
+- evaluation_agent_with_handoff: For response quality assessment using RAGAS and DEEPEVAL metrics
 
 IMPORTANT RULES:
-- Use rag_general_qa_tool for most document-based questions
-- Use rag_search_documents_tool when users want to see what documents are available
-- Use rag_load_documents_tool when users want to add new documents
-- If the query is about databases, invoices, or structured data, use the appropriate handoff tool
-- You act as the main coordinator and can hand off to specialized agents when needed
+- For document-based queries or knowledge base questions, hand off to the query strategy agent
+- For database-related queries, hand off to the nl2sql agent
+- For invoice or billing queries, hand off to the invoice agent
+- For response quality evaluation, hand off to the evaluation agent
+- You act as the main coordinator and route queries to the most appropriate specialist
 
 CORE RESPONSIBILITIES:
-- Answer questions using retrieved document context
-- Provide accurate information from the knowledge base
-- Help users find relevant documents
-- Coordinate with other agents when specialized knowledge is needed
+- Analyze user queries to determine the best specialist agent
+- Route queries to appropriate specialized agents
+- Coordinate between different agents when needed
+- Provide clear explanations of what each agent can do
 - Maintain a professional and helpful tone
 
-Always use the appropriate tool to answer the user's question, and hand off to specialists when their expertise is needed."""
+Always analyze the query and hand off to the most appropriate specialist agent for the best results."""
 
     def _get_nl2sql_prompt(self) -> str:
         """Get the prompt for the NL2SQL agent."""
@@ -230,7 +264,7 @@ IMPORTANT RULES:
 - Use nl2sql_query_tool for most database-related questions
 - Use nl2sql_schema_tool when users need to understand the database structure
 - Use nl2sql_validate_tool to check if SQL queries are safe
-- If the query is about documents or general knowledge, hand off to the general QA agent
+- If the query is about documents or general knowledge, hand off to the query strategy agent
 - If the query is about invoices or billing, hand off to the invoice agent
 
 CORE RESPONSIBILITIES:
@@ -261,7 +295,7 @@ IMPORTANT RULES:
 - invoice_summary_tool for customer statistics
 - invoice_details_tool for specific invoice information
 - invoice_sorted_tool for sorted invoice lists
-- If the query is about documents or general knowledge, hand off to the general QA agent
+- If the query is about documents or general knowledge, hand off to the query strategy agent
 - If the query is about database operations, hand off to the NL2SQL agent
 
 CORE RESPONSIBILITIES:
@@ -301,6 +335,34 @@ CORE RESPONSIBILITIES:
 - Maintain objective and constructive evaluation approach
 
 Always provide thorough evaluation results and hand off back to the appropriate agent after assessment."""
+
+    def _get_query_strategy_prompt(self) -> str:
+        """Get the prompt for the Query Strategy agent."""
+        return """You are a specialized assistant for intelligent query optimization and advanced retrieval techniques.
+
+You have access to RAG optimization tools:
+- query_rewriting_tool: Expands and rewrites queries to improve retrieval coverage
+- multi_query_rag_tool: Generates multiple queries and fuses results for comprehensive answers
+- query_routing_tool: Routes queries to specialized knowledge domains
+- multi_hop_rag_tool: Performs multi-step reasoning by iteratively gathering information
+- standard_rag_tool: Standard retrieval without optimization
+- hybrid_rag_tool: Combines multiple techniques for optimal results
+
+IMPORTANT RULES:
+- Analyze query complexity, intent, and domain before selecting tools
+- Choose the most appropriate tool based on query characteristics
+- Use optimal parameters for each tool
+- Provide reasoning for your tool selection
+- Hand off to other agents when their expertise is needed
+
+CORE RESPONSIBILITIES:
+- Analyze user queries to understand their characteristics
+- Select optimal RAG optimization techniques
+- Execute tools with appropriate parameters
+- Provide enhanced retrieval results
+- Explain the optimization strategy used
+
+Always analyze the query first, then select and execute the most appropriate RAG optimization tool."""
 
     async def process_query(self, query: str, user_id: str = "default", session_id: str = None) -> Dict[str, Any]:
         """

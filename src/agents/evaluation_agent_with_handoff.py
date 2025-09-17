@@ -11,8 +11,8 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import tool
 
-from core.config import config
-from core.evaluation_tools import (
+from core.config.config import config
+from systems.evaluation_tools import (
     RAGASEvaluationTools,
     DEEPEVALEvaluationTools,
     CustomEvaluationTools,
