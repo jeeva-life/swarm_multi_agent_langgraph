@@ -11,7 +11,7 @@ import logging
 from core.memory.short_term_memory import ShortTermMemory
 from core.memory.long_term_memory import LongTermMemory
 from core.memory.memory_backends import MemoryBackend, RedisBackend, InMemoryBackend
-from core.config import config
+from core.config.config import config
 
 
 class MemoryManager:
