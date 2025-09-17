@@ -20,7 +20,7 @@ async def check_health():
     
     try:
         # Reload config to ensure latest environment variables
-        from core.config import config
+        from core.config.config import config
         config.reload()
         
         # Initialize the application

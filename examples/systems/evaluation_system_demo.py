@@ -12,7 +12,7 @@ from datetime import datetime
 # Add the src directory to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-from core.config import config
+from core.config.config import config
 from core.memory import MemoryManager
 from core.monitoring import MetricsCollector, AlertManager, DriftDetector
 from agents.handoff_swarm import HandoffSwarm
