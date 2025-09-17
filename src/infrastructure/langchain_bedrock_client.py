@@ -3,13 +3,12 @@ LangChain Anthropic client for Claude integration.
 Uses LangChain's ChatAnthropic for direct API access.
 """
 
-import os
 import logging
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from dotenv import load_dotenv
 
-from core.config import config
+from core.config.config import config
 
 # Load environment variables
 load_dotenv()

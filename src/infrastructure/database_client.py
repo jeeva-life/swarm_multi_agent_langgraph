@@ -5,11 +5,9 @@ Handles database connections, queries, and data management.
 
 from typing import Dict, List, Any, Optional, Union
 import logging
-import asyncio
 from datetime import datetime
-import json
 
-from core.config import config
+from core.config.config import config
 
 
 class DatabaseClient:

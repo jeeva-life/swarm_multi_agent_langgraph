@@ -9,7 +9,7 @@ import asyncio
 import logging
 import json
 
-from core.config import config
+from core.config.config import config
 
 
 class MetricsCollector:

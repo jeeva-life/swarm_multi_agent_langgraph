@@ -10,7 +10,7 @@ import asyncio
 import logging
 import json
 
-from core.config import config
+from core.config.config import config
 
 
 class AlertLevel(Enum):
@@ -176,7 +176,7 @@ class AlertManager:
     
     def _console_alert(self, alert: Alert):
         """Console output handler for critical alerts."""
-        print(f"\n🚨 CRITICAL ALERT: {alert.message}")
+        print(f"\n CRITICAL ALERT: {alert.message}")
         if alert.details:
             print(f"Details: {json.dumps(alert.details, indent=2)}")
         print(f"Time: {alert.timestamp}")
