@@ -2,7 +2,7 @@
 
 This guide explains how to deploy the Multi-Agent Swarm system using Docker and Docker Compose.
 
-## 🐳 **Docker Architecture**
+##  **Docker Architecture**
 
 The system consists of 5 services:
 
@@ -12,13 +12,13 @@ The system consists of 5 services:
 4. **pgadmin**: PostgreSQL management UI (optional)
 5. **redis-commander**: Redis management UI (optional)
 
-## 📋 **Prerequisites**
+##  **Prerequisites**
 
 - Docker Desktop installed
 - Docker Compose v2.0+
 - Anthropic API key
 
-## 🚀 **Quick Start**
+##  **Quick Start**
 
 ### 1. **Set Environment Variables**
 
@@ -55,7 +55,7 @@ docker-compose ps
 - **pgAdmin**: http://localhost:8080 (admin@swarm.local / admin_password)
 - **Redis Commander**: http://localhost:8081
 
-## 🔧 **Development vs Production**
+##  **Development vs Production**
 
 ### **Development Mode**
 ```bash
@@ -75,7 +75,7 @@ docker-compose up -d
 docker-compose up -d --scale swarm-app=3
 ```
 
-## 📊 **Service Management**
+##  **Service Management**
 
 ### **View Logs**
 ```bash
@@ -106,7 +106,7 @@ docker-compose down
 docker-compose down -v
 ```
 
-## 🏗️ **Building the Application**
+##  **Building the Application**
 
 ### **Build Only**
 ```bash
@@ -123,7 +123,7 @@ docker run -p 8000:8000 --env-file .env swarm-multi-agent
 docker-compose up --build -d
 ```
 
-## 🔍 **Health Monitoring**
+##  **Health Monitoring**
 
 ### **Application Health**
 ```bash
@@ -143,7 +143,7 @@ docker-compose ps
 docker inspect swarm_app --format='{{.State.Health.Status}}'
 ```
 
-## 🗄️ **Data Persistence**
+##  **Data Persistence**
 
 ### **Volumes**
 - **PostgreSQL data**: `postgres_data` volume
@@ -160,7 +160,7 @@ docker-compose exec postgres pg_dump -U swarm_user swarm_db > backup.sql
 docker-compose exec -T postgres psql -U swarm_user swarm_db < backup.sql
 ```
 
-## 🔧 **Configuration**
+##  **Configuration**
 
 ### **Environment Variables**
 
@@ -188,7 +188,7 @@ docker-compose exec -T postgres psql -U swarm_user swarm_db < backup.sql
 | pgadmin | 8080 | PostgreSQL admin UI |
 | redis-commander | 8081 | Redis admin UI |
 
-## 🚨 **Troubleshooting**
+##  **Troubleshooting**
 
 ### **Common Issues**
 
@@ -239,7 +239,7 @@ echo "DEBUG=true" >> .env
 docker-compose restart swarm-app
 ```
 
-## 📈 **Scaling**
+##  **Scaling**
 
 ### **Horizontal Scaling**
 ```bash
@@ -264,7 +264,7 @@ services:
           cpus: '0.5'
 ```
 
-## 🔒 **Security**
+##  **Security**
 
 ### **Production Security**
 1. Change default passwords
@@ -287,7 +287,7 @@ services:
       - ANTHROPIC_API_KEY_FILE=/run/secrets/anthropic_api_key
 ```
 
-## 📝 **API Testing**
+##  **API Testing**
 
 ### **Test Endpoints**
 ```bash
@@ -305,7 +305,7 @@ curl -X POST http://localhost:8000/query/rag \
   -d '{"query": "What are the company policies?", "session_id": "rag_1"}'
 ```
 
-## 🎯 **Next Steps**
+##  **Next Steps**
 
 1. **Set up monitoring** (Prometheus, Grafana)
 2. **Implement CI/CD** (GitHub Actions, GitLab CI)
@@ -316,4 +316,4 @@ curl -X POST http://localhost:8000/query/rag \
 
 ---
 
-**Happy Deploying! 🚀**
+**Happy Deploying! **

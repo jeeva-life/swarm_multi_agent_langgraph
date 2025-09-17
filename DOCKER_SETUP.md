@@ -48,7 +48,7 @@ docker-compose down
 docker-compose down -v
 ```
 
-## 🏗️ Services Included
+##  Services Included
 
 ### PostgreSQL Database
 - **Container**: `swarm_postgres`
@@ -63,7 +63,7 @@ docker-compose down -v
 - **Port**: `6379`
 - **Management UI**: Redis Commander at http://localhost:8081
 
-## 🔧 Management UIs
+##  Management UIs
 
 ### pgAdmin (PostgreSQL Management)
 - **URL**: http://localhost:8080
